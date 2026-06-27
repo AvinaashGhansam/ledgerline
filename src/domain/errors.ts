@@ -1,4 +1,5 @@
-import type { Currency } from "./money.ts";
+import type { AccountId } from "./account.ts";
+import type { Currency, Money } from "./money.ts";
 
 export class CurrencyMismatchError extends Error {
   constructor(base: Currency, other: Currency) {
@@ -15,3 +16,19 @@ export class NonIntegerAmountError extends Error {
     this.name = "NonIntegerAmountError";
   }
 }
+
+export class InvalidAccountIdError extends Error {
+  constructor() {
+    super("Invariant violation: AccountId cannot be empty");
+    this.name = "InvalidAccountIdError";
+  }
+}
+export type DomainError =
+  | { readonly kind: "AccountNotFound"; readonly id: AccountId }
+  | { readonly kind: "AccountClosed"; readonly id: AccountId }
+  | {
+      readonly kind: "InsufficientFunds";
+      readonly accountId: AccountId;
+      readonly required: Money;
+      readonly available: Money;
+    };
