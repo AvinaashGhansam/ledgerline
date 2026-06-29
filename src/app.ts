@@ -1,9 +1,11 @@
 import express from "express";
 import { pinoHttp } from "pino-http";
 import type { Logger } from "./observability/logger.ts";
+import type { LedgerRepository } from "./persistence/repository.ts";
 
 export interface AppDeps {
   logger: Logger;
+  repo: LedgerRepository;
 }
 
 export function createApp(deps: AppDeps) {

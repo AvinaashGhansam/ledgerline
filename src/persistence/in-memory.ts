@@ -1,11 +1,17 @@
 import { Account, type AccountId, toAccountId } from "../domain/account.ts";
+import type { IdGenerator } from "./id.ts";
 import type { CreateAccountInput, LedgerRepository } from "./repository.ts";
 
 export class InMemoryLedgerRepository implements LedgerRepository {
   readonly #accounts = new Map<AccountId, Account>();
+  readonly #generateId: IdGenerator;
+
+  constructor(generateId: IdGenerator) {
+    this.#generateId = generateId;
+  }
 
   async createAccount(input: CreateAccountInput): Promise<Account> {
-    const id = toAccountId(crypto.randomUUID());
+    const id = toAccountId(this.#generateId());
     const account = Account.create({
       id,
       currency: input.currency,
