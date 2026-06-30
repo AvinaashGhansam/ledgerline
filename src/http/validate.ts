@@ -1,4 +1,5 @@
 import type { Request, RequestHandler, Response } from "express";
+import type { ReqId } from "pino-http";
 import type { ZodError, ZodType, z } from "zod";
 
 interface ValidationSchemas {
@@ -21,8 +22,8 @@ const formatIssues = (error: ZodError) => {
   return error.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message }));
 };
 
-const respond400 = (res: Response, error: ZodError) => {
-  res.status(400).json({ error: "validation", issues: formatIssues(error) });
+const respond400 = (res: Response, error: ZodError, id: ReqId) => {
+  res.status(400).json({ requestId: id, error: "validation", issues: formatIssues(error) });
 };
 
 export const validate = <S extends ValidationSchemas>(
@@ -32,11 +33,11 @@ export const validate = <S extends ValidationSchemas>(
   return async (req, res) => {
     const { body, params, query } = schemas;
 
-    const parsed: { body?: unknown; param?: unknown; query?: unknown } = {};
+    const parsed: { body?: unknown; params?: unknown; query?: unknown } = {};
     if (body) {
       const safeBody = body.safeParse(req.body);
       if (!safeBody.success) {
-        respond400(res, safeBody.error);
+        respond400(res, safeBody.error, req.id);
         return;
       }
       parsed.body = safeBody.data;
@@ -46,17 +47,17 @@ export const validate = <S extends ValidationSchemas>(
       const safeParams = params.safeParse(req.params);
 
       if (!safeParams.success) {
-        respond400(res, safeParams.error);
+        respond400(res, safeParams.error, req.id);
         return;
       }
-      parsed.param = safeParams.data;
+      parsed.params = safeParams.data;
     }
 
     if (query) {
       const safeQuery = query.safeParse(req.query);
 
       if (!safeQuery.success) {
-        respond400(res, safeQuery.error);
+        respond400(res, safeQuery.error, req.id);
         return;
       }
       parsed.query = safeQuery.data;
