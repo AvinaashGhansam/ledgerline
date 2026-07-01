@@ -1,5 +1,5 @@
 import { InvalidAccountIdError } from "./errors.ts";
-import type { Currency } from "./money.ts";
+import type { Currency } from "./money.value-object.ts";
 
 declare const accountIdBrand: unique symbol;
 export type AccountId = string & { readonly [accountIdBrand]: true };

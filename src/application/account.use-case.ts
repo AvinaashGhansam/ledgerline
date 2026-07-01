@@ -1,5 +1,5 @@
-import { type Account, toAccountId } from "../domain/account.ts";
-import type { CreateAccountInput, LedgerRepository } from "../persistence/repository.ts";
+import { type Account, toAccountId } from "../domain/account.entity.ts";
+import type { CreateAccountInput, LedgerRepository } from "../persistence/ledger.repository.ts";
 
 export const createAccount = async (
   repo: LedgerRepository,

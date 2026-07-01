@@ -1,8 +1,8 @@
 import { createApp } from "./app.ts";
 import { config } from "./config/env.ts";
 import { logger } from "./observability/logger.ts";
-import type { IdGenerator } from "./persistence/id.ts";
-import { InMemoryLedgerRepository } from "./persistence/in-memory.ts";
+import type { IdGenerator } from "./persistence/id-generator.ts";
+import { InMemoryLedgerRepository } from "./persistence/ledger.repository.in-memory.ts";
 
 const generateId: IdGenerator = () => crypto.randomUUID();
 const repo = new InMemoryLedgerRepository(generateId);

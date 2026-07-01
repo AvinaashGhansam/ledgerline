@@ -1,5 +1,5 @@
-import type { AccountId } from "./account.ts";
-import type { Currency, Money } from "./money.ts";
+import type { AccountId } from "./account.entity.ts";
+import type { Currency, Money } from "./money.value-object.ts";
 
 export class CurrencyMismatchError extends Error {
   constructor(base: Currency, other: Currency) {

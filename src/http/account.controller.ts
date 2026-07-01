@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { createAccount, getAccount } from "../../application/accounts.ts";
-import type { LedgerRepository } from "../../persistence/repository.ts";
-import { AccountParams, CreateAccountBody } from "../schemas.ts";
-import { validate } from "../validate.ts";
+import { createAccount, getAccount } from "../application/account.use-case.ts";
+import type { LedgerRepository } from "../persistence/ledger.repository.ts";
+import { AccountParams, CreateAccountBody } from "./account.schema.ts";
+import { validate } from "./validate.middleware.ts";
 
-export const accountsRouter = (repo: LedgerRepository): Router => {
+export const accountController = (repo: LedgerRepository): Router => {
   const router = Router();
 
   router.post(

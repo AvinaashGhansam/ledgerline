@@ -1,8 +1,8 @@
 import express from "express";
 import { pinoHttp } from "pino-http";
-import { accountsRouter } from "./http/routes/accounts.ts";
+import { accountController } from "./http/account.controller.ts";
 import type { Logger } from "./observability/logger.ts";
-import type { LedgerRepository } from "./persistence/repository.ts";
+import type { LedgerRepository } from "./persistence/ledger.repository.ts";
 
 export interface AppDeps {
   logger: Logger;
@@ -16,7 +16,7 @@ export function createApp(deps: AppDeps) {
   app.use(pinoHttp({ logger }));
   app.use(express.json({ limit: "100kb" }));
 
-  app.use("/accounts", accountsRouter(repo));
+  app.use("/accounts", accountController(repo));
 
   app.get("/healthz", (_req, res) => {
     res.status(200).json({ status: "ok" });

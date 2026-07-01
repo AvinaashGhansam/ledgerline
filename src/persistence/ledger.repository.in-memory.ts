@@ -1,6 +1,6 @@
-import { Account, type AccountId, toAccountId } from "../domain/account.ts";
-import type { IdGenerator } from "./id.ts";
-import type { CreateAccountInput, LedgerRepository } from "./repository.ts";
+import { Account, type AccountId, toAccountId } from "../domain/account.entity.ts";
+import type { IdGenerator } from "./id-generator.ts";
+import type { CreateAccountInput, LedgerRepository } from "./ledger.repository.ts";
 
 export class InMemoryLedgerRepository implements LedgerRepository {
   readonly #accounts = new Map<AccountId, Account>();

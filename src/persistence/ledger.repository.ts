@@ -1,5 +1,5 @@
-import type { Account, AccountId, AccountType } from "../domain/account.ts";
-import type { Currency } from "../domain/money.ts";
+import type { Account, AccountId, AccountType } from "../domain/account.entity.ts";
+import type { Currency } from "../domain/money.value-object.ts";
 
 export type CreateAccountInput = {
   readonly currency: Currency;
