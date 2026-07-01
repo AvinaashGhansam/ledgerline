@@ -23,9 +23,31 @@ export class InvalidAccountIdError extends Error {
     this.name = "InvalidAccountIdError";
   }
 }
+
+export class InvalidTransactionIdError extends Error {
+  constructor() {
+    super("Invariant violation: TransactionId cannot be empty");
+    this.name = "InvalidTransactionIdError";
+  }
+}
+
+export class UnbalancedTransactionError extends Error {
+  constructor(delta: bigint) {
+    super(`Invariant violation: postings must sum to zero; delta=${delta}`);
+    this.name = "UnbalancedTransactionError";
+  }
+}
+
+export class TooFewPostingsError extends Error {
+  constructor() {
+    super("Invariant violation. Must be 2 or more postings.");
+  }
+}
+
 export type DomainError =
   | { readonly kind: "AccountNotFound"; readonly id: AccountId }
   | { readonly kind: "AccountClosed"; readonly id: AccountId }
+  | { readonly kind: "UnbalancedTransaction"; readonly delta: Money }
   | {
       readonly kind: "InsufficientFunds";
       readonly accountId: AccountId;
