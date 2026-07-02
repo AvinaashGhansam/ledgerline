@@ -1,6 +1,7 @@
 import { Account, type AccountId, toAccountId } from "../domain/account.entity.ts";
-import type { DomainError } from "../domain/errors.ts";
+import { AccountNotFoundError, type DomainError } from "../domain/errors.ts";
 import type { Money } from "../domain/money.value-object.ts";
+import { Money as MoneyObject } from "../domain/money.value-object.ts";
 import { err, ok, type Result } from "../domain/result.ts";
 import {
   type Transaction,
@@ -45,8 +46,23 @@ export class InMemoryLedgerRepository implements LedgerRepository {
     return ok(transaction);
   }
 
-  getBalance(accountId: AccountId): Promise<Money> {
-    throw new Error("Method not implemented.");
+  async getBalance(accountId: AccountId): Promise<Money> {
+    const account = await this.getAccount(accountId);
+
+    if (!account) {
+      throw new AccountNotFoundError(accountId);
+    }
+
+    let balance: Money = MoneyObject.of(0n, account.currency);
+
+    for (const transaction of this.#transactions.values()) {
+      for (const posting of transaction.postings) {
+        if (posting.accountId === accountId) {
+          balance = balance.add(posting.amount);
+        }
+      }
+    }
+    return balance;
   }
 
   async createAccount(input: CreateAccountInput): Promise<Account> {
