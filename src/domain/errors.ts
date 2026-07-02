@@ -38,6 +38,11 @@ export class UnbalancedTransactionError extends Error {
   }
 }
 
+export class AccountNotFoundError extends Error {
+  constructor(id: AccountId) {
+    super(`Error: cannot find account with id=${id}`);
+  }
+}
 export class TooFewPostingsError extends Error {
   constructor() {
     super("Invariant violation. Must be 2 or more postings.");
