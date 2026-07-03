@@ -1,10 +1,11 @@
 import type { AccountId } from "./account.entity.ts";
 import {
+  type DomainError,
   InvalidTransactionIdError,
-  TooFewPostingsError,
   UnbalancedTransactionError,
 } from "./errors.ts";
 import type { Money } from "./money.value-object.ts";
+import { err, ok, type Result } from "./result.ts";
 
 declare const transactionIdBrand: unique symbol;
 export type TransactionId = string & { readonly [transactionIdBrand]: true };
@@ -27,21 +28,42 @@ export type Transaction = {
   readonly memo?: string;
 };
 
-export const imbalanceOf = (postings: readonly Posting[]): Money => {
-  if (postings.length < 2) {
-    throw new TooFewPostingsError();
+export const analyzePostings = (postings: readonly Posting[]): Result<Money, DomainError> => {
+  const [first, ...rest] = postings;
+
+  if (!first || rest.length === 0) {
+    return err({ kind: "TooFewPostings", count: postings.length });
   }
 
-  let runningTotal = postings[0]!.amount;
-  for (const posting of postings.slice(1)) {
+  const hasMixedCurrencies = rest.some(
+    (posting) => posting.amount.currency !== first.amount.currency,
+  );
+
+  if (hasMixedCurrencies) {
+    return err({
+      kind: "MixedCurrencyPostings",
+      currencies: [...new Set(postings.map((p) => p.amount.currency))],
+    });
+  }
+
+  let runningTotal = first.amount;
+  for (const posting of rest) {
     runningTotal = runningTotal.add(posting.amount);
   }
-  return runningTotal;
+
+  return ok(runningTotal);
 };
 
 export const Transaction = {
   create(input: { id: TransactionId; postings: readonly Posting[]; memo?: string }): Transaction {
-    const delta = imbalanceOf(input.postings);
+    const analysis = analyzePostings(input.postings);
+
+    if (!analysis.ok) {
+      // TODO: InvariantViolationError
+      throw new Error(`Invariant violation ${analysis.error.kind}`);
+    }
+
+    const delta = analysis.value;
 
     if (!delta.isZero()) {
       throw new UnbalancedTransactionError(delta.minorUnits);

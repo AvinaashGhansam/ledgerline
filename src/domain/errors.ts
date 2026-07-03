@@ -41,11 +41,15 @@ export class UnbalancedTransactionError extends Error {
 export class AccountNotFoundError extends Error {
   constructor(id: AccountId) {
     super(`Error: cannot find account with id=${id}`);
+
+    this.name = "AccountNotFoundError";
   }
 }
 export class TooFewPostingsError extends Error {
   constructor() {
     super("Invariant violation. Must be 2 or more postings.");
+
+    this.name = "TooFewPostingsError";
   }
 }
 
@@ -53,6 +57,8 @@ export type DomainError =
   | { readonly kind: "AccountNotFound"; readonly id: AccountId }
   | { readonly kind: "AccountClosed"; readonly id: AccountId }
   | { readonly kind: "UnbalancedTransaction"; readonly delta: Money }
+  | { readonly kind: "TooFewPostings"; readonly count: number }
+  | { readonly kind: "MixedCurrencyPostings"; readonly currencies: string[] }
   | {
       readonly kind: "InsufficientFunds";
       readonly accountId: AccountId;
