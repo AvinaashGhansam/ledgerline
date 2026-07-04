@@ -2,12 +2,14 @@ import { createApp } from "./app.ts";
 import { config } from "./config/env.ts";
 import { logger } from "./observability/logger.ts";
 import type { IdGenerator } from "./persistence/id-generator.ts";
+import { InMemoryIdempotencyStore } from "./persistence/idempotency.store.in-memory.ts";
 import { InMemoryLedgerRepository } from "./persistence/ledger.repository.in-memory.ts";
 
 const generateId: IdGenerator = () => crypto.randomUUID();
 const repo = new InMemoryLedgerRepository(generateId);
+const store = new InMemoryIdempotencyStore();
 
-const app = createApp({ logger, repo });
+const app = createApp({ logger, repo, store });
 
 const server = app.listen(config.PORT, () => {
   logger.info({ port: config.PORT }, "server listening");

@@ -45,11 +45,10 @@ export class AccountNotFoundError extends Error {
     this.name = "AccountNotFoundError";
   }
 }
-export class TooFewPostingsError extends Error {
-  constructor() {
-    super("Invariant violation. Must be 2 or more postings.");
 
-    this.name = "TooFewPostingsError";
+export class InvariantViolationError extends Error {
+  constructor(domainError: DomainError) {
+    super(`Invariant violation ${domainError.kind}`);
   }
 }
 

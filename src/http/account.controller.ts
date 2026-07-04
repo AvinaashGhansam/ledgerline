@@ -27,5 +27,21 @@ export const accountController = (repo: LedgerRepository): Router => {
       res.status(200).json(account);
     }),
   );
+
+  router.get(
+    "/:id/balance",
+    validate({ params: AccountParams }, async (req, res, data) => {
+      const existing = await getAccount(repo, data.params.id);
+
+      if (!existing) {
+        res.status(404).json({ requestId: req.id, error: "not_found" });
+        return;
+      }
+
+      const balance = await repo.getBalance(existing.id);
+      res.status(200).json({ currency: balance.currency, balance: balance.minorUnits.toString() });
+      return;
+    }),
+  );
   return router;
 };

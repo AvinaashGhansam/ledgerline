@@ -1,14 +1,8 @@
 import { Account, type AccountId, toAccountId } from "../domain/account.entity.ts";
 import { AccountNotFoundError, type DomainError } from "../domain/errors.ts";
-import type { Money } from "../domain/money.value-object.ts";
-import { Money as MoneyObject } from "../domain/money.value-object.ts";
-import { err, ok, type Result } from "../domain/result.ts";
-import {
-  type Transaction,
-  Transaction as TransactionEntity,
-  type TransactionId,
-  toTransactionId,
-} from "../domain/transaction.entity.ts";
+import { Money } from "../domain/money.value-object.ts";
+import { ok, type Result } from "../domain/result.ts";
+import { Transaction, type TransactionId, toTransactionId } from "../domain/transaction.entity.ts";
 import type { IdGenerator } from "./id-generator.ts";
 import type {
   CreateAccountInput,
@@ -19,24 +13,17 @@ import type {
 export class InMemoryLedgerRepository implements LedgerRepository {
   readonly #accounts = new Map<AccountId, Account>();
   readonly #generateId: IdGenerator;
-
-  #transactions = new Map<TransactionId, Transaction>();
+  readonly #transactions = new Map<TransactionId, Transaction>();
 
   constructor(generateId: IdGenerator) {
     this.#generateId = generateId;
   }
 
   async postTransaction(input: PostTransactionInput): Promise<Result<Transaction, DomainError>> {
-    // Check for existence
-    for (const posting of input.postings) {
-      if (!this.#accounts.get(posting.accountId)) {
-        return err({ kind: "AccountNotFound", id: posting.accountId });
-      }
-    }
     // Generate an id
     const id = toTransactionId(this.#generateId());
     // Create the transaction
-    const transaction = TransactionEntity.create({
+    const transaction = Transaction.create({
       id,
       postings: input.postings,
       ...(input.memo ? { memo: input.memo } : {}),
@@ -53,7 +40,7 @@ export class InMemoryLedgerRepository implements LedgerRepository {
       throw new AccountNotFoundError(accountId);
     }
 
-    let balance: Money = MoneyObject.of(0n, account.currency);
+    let balance: Money = Money.of(0n, account.currency);
 
     for (const transaction of this.#transactions.values()) {
       for (const posting of transaction.postings) {

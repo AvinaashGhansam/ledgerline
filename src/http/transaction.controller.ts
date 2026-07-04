@@ -1,27 +1,79 @@
-import type { Request, Response } from "express";
 import { postTransactionUseCase } from "../application/transaction.use-case.ts";
+import type { Transaction } from "../domain/transaction.entity.ts";
+import type { IdempotencyStore } from "../persistence/idempotency.store.ts";
 import type { LedgerRepository } from "../persistence/ledger.repository.ts";
+import { fingerprint } from "./fingerprint.ts";
+import { CreateTransactionBody } from "./transaction.schema.ts";
+import { validate } from "./validate.middleware.ts";
 
-export const postTransactionController = (repo: LedgerRepository) => {
-  return async (req: Request, res: Response) => {
-    const result = await postTransactionUseCase(repo, req.body);
+const presentTransaction = (tx: Transaction) => ({
+  id: tx.id,
+  memo: tx.memo,
+  postings: tx.postings.map((p) => ({
+    accountId: p.accountId,
+    amount: p.amount.minorUnits.toString(),
+    currency: p.amount.currency,
+  })),
+});
+
+export const postTransactionController = (repo: LedgerRepository, store: IdempotencyStore) => {
+  return validate({ body: CreateTransactionBody }, async (req, res, data) => {
+    const key = req.get("Idempotency-Key");
+    const fp = fingerprint(data.body);
+
+    if (key) {
+      const existing = await store.get(key);
+      if (existing) {
+        if (existing.fingerprint === fp) {
+          res.status(existing.status).json(existing.body);
+          return;
+        }
+        res.status(409).json({ error: "idempotency_conflict" });
+        return;
+      }
+    }
+
+    const result = await postTransactionUseCase(repo, data.body);
+
+    let responseStatus: number;
+    let responseBody: unknown;
 
     if (result.ok) {
-      return res.status(201).json(result.value);
+      responseStatus = 201;
+      responseBody = presentTransaction(result.value);
+    } else {
+      switch (result.error.kind) {
+        case "AccountNotFound":
+          responseStatus = 404;
+          responseBody = { error: "account_not_found", accountId: result.error.id };
+          break;
+        case "TooFewPostings":
+          responseStatus = 400;
+          responseBody = { error: "too_few_postings", count: result.error.count };
+          break;
+        case "MixedCurrencyPostings":
+          responseStatus = 422;
+          responseBody = { error: "currency_mismatch", currencies: result.error.currencies };
+          break;
+        case "UnbalancedTransaction":
+          responseStatus = 422;
+          responseBody = {
+            error: "unbalanced_transaction",
+            delta: result.error.delta.minorUnits.toString(),
+          };
+          break;
+        default:
+          responseStatus = 500;
+          responseBody = { error: "internal_server_error" };
+          break;
+      }
     }
 
-    switch (result.error.kind) {
-      case "AccountNotFound":
-        return res.status(404).json({ error: "account_not_found", accountId: result.error.id });
-      case "TooFewPostings":
-        return res.status(400).json({ error: "too_few_posting", count: result.error.count });
-      case "MixedCurrencyPostings":
-        return res
-          .status(422)
-          .json({ error: "currency_mismatch", currencies: result.error.currencies });
-      case "UnbalancedTransaction":
-        return res.status(422).json({ error: "unbalanced_transaction", delta: result.error.delta });
+    if (responseStatus === 201 && key) {
+      await store.put(key, { fingerprint: fp, status: responseStatus, body: responseBody });
     }
-    return res.status(500).json({ error: result.error });
-  };
+
+    res.status(responseStatus).json(responseBody);
+    return;
+  });
 };

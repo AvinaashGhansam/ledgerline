@@ -2,6 +2,7 @@ import type { AccountId } from "./account.entity.ts";
 import {
   type DomainError,
   InvalidTransactionIdError,
+  InvariantViolationError,
   UnbalancedTransactionError,
 } from "./errors.ts";
 import type { Money } from "./money.value-object.ts";
@@ -59,8 +60,7 @@ export const Transaction = {
     const analysis = analyzePostings(input.postings);
 
     if (!analysis.ok) {
-      // TODO: InvariantViolationError
-      throw new Error(`Invariant violation ${analysis.error.kind}`);
+      throw new InvariantViolationError(analysis.error);
     }
 
     const delta = analysis.value;
