@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { ACCOUNT_TYPES } from "../domain/account.ts";
-import { CURRENCIES } from "../domain/money.ts";
+import { ACCOUNT_TYPES } from "../domain/account.entity.ts";
+import { CURRENCIES } from "../domain/money.value-object.ts";
 
 export const CreateAccountBody = z.object({
   currency: z.enum(CURRENCIES),
