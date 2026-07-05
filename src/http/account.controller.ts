@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createAccount, getAccount } from "../application/account.use-case.ts";
+import { createAccount, getAccount, getBalanceUseCase } from "../application/account.use-case.ts";
 import type { LedgerRepository } from "../persistence/ledger.repository.ts";
 import { AccountParams, CreateAccountBody } from "./account.schema.ts";
 import { validate } from "./validate.middleware.ts";
@@ -31,16 +31,14 @@ export const accountController = (repo: LedgerRepository): Router => {
   router.get(
     "/:id/balance",
     validate({ params: AccountParams }, async (req, res, data) => {
-      const existing = await getAccount(repo, data.params.id);
+      const balance = await getBalanceUseCase(repo, data.params.id);
 
-      if (!existing) {
+      if (!balance) {
         res.status(404).json({ requestId: req.id, error: "not_found" });
         return;
       }
 
-      const balance = await repo.getBalance(existing.id);
       res.status(200).json({ currency: balance.currency, balance: balance.minorUnits.toString() });
-      return;
     }),
   );
   return router;

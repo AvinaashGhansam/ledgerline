@@ -38,17 +38,10 @@ export class UnbalancedTransactionError extends Error {
   }
 }
 
-export class AccountNotFoundError extends Error {
-  constructor(id: AccountId) {
-    super(`Error: cannot find account with id=${id}`);
-
-    this.name = "AccountNotFoundError";
-  }
-}
-
 export class InvariantViolationError extends Error {
   constructor(domainError: DomainError) {
     super(`Invariant violation ${domainError.kind}`);
+    this.name = "InvariantViolationError";
   }
 }
 

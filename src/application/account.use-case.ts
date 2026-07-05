@@ -1,4 +1,5 @@
 import { type Account, toAccountId } from "../domain/account.entity.ts";
+import type { Money } from "../domain/money.value-object.ts";
 import type { CreateAccountInput, LedgerRepository } from "../persistence/ledger.repository.ts";
 
 export const createAccount = async (
@@ -14,4 +15,11 @@ export const getAccount = async (
 ): Promise<Account | undefined> => {
   const accountId = toAccountId(id);
   return repo.getAccount(accountId);
+};
+
+export const getBalanceUseCase = async (
+  repo: LedgerRepository,
+  id: string,
+): Promise<Money | undefined> => {
+  return repo.getBalance(toAccountId(id));
 };

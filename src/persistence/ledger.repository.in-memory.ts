@@ -1,5 +1,5 @@
 import { Account, type AccountId, toAccountId } from "../domain/account.entity.ts";
-import { AccountNotFoundError, type DomainError } from "../domain/errors.ts";
+import type { DomainError } from "../domain/errors.ts";
 import { Money } from "../domain/money.value-object.ts";
 import { ok, type Result } from "../domain/result.ts";
 import { Transaction, type TransactionId, toTransactionId } from "../domain/transaction.entity.ts";
@@ -20,24 +20,21 @@ export class InMemoryLedgerRepository implements LedgerRepository {
   }
 
   async postTransaction(input: PostTransactionInput): Promise<Result<Transaction, DomainError>> {
-    // Generate an id
     const id = toTransactionId(this.#generateId());
-    // Create the transaction
     const transaction = Transaction.create({
       id,
       postings: input.postings,
       ...(input.memo ? { memo: input.memo } : {}),
     });
-    // Save it
     this.#transactions.set(id, transaction);
     return ok(transaction);
   }
 
-  async getBalance(accountId: AccountId): Promise<Money> {
+  async getBalance(accountId: AccountId): Promise<Money | undefined> {
     const account = await this.getAccount(accountId);
 
     if (!account) {
-      throw new AccountNotFoundError(accountId);
+      return undefined;
     }
 
     let balance: Money = Money.of(0n, account.currency);

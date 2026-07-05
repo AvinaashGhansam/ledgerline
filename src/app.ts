@@ -1,7 +1,7 @@
 import express from "express";
 import { pinoHttp } from "pino-http";
 import { accountController } from "./http/account.controller.ts";
-import { postTransactionController } from "./http/transaction.controller.ts";
+import { transactionController } from "./http/transaction.controller.ts";
 import type { Logger } from "./observability/logger.ts";
 import type { IdempotencyStore } from "./persistence/idempotency.store.ts";
 import type { LedgerRepository } from "./persistence/ledger.repository.ts";
@@ -20,7 +20,7 @@ export function createApp(deps: AppDeps) {
   app.use(express.json({ limit: "100kb" }));
 
   app.use("/accounts", accountController(repo));
-  app.use("/transactions", postTransactionController(repo, store));
+  app.use("/transactions", transactionController(repo, store));
 
   app.get("/healthz", (_req, res) => {
     res.status(200).json({ status: "ok" });

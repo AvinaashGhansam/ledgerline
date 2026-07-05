@@ -18,6 +18,6 @@ export interface LedgerRepository {
   createAccount(input: CreateAccountInput): Promise<Account>;
   getAccount(id: AccountId): Promise<Account | undefined>;
   postTransaction(input: PostTransactionInput): Promise<Result<Transaction, DomainError>>;
-  getBalance(accountId: AccountId): Promise<Money>;
+  getBalance(accountId: AccountId): Promise<Money | undefined>;
   getTransaction(id: TransactionId): Promise<Transaction | undefined>;
 }
