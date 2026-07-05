@@ -1,5 +1,5 @@
-import type { AccountId } from "./account.ts";
-import type { Currency, Money } from "./money.ts";
+import type { AccountId } from "./account.entity.ts";
+import type { Currency, Money } from "./money.value-object.ts";
 
 export class CurrencyMismatchError extends Error {
   constructor(base: Currency, other: Currency) {
@@ -23,9 +23,34 @@ export class InvalidAccountIdError extends Error {
     this.name = "InvalidAccountIdError";
   }
 }
+
+export class InvalidTransactionIdError extends Error {
+  constructor() {
+    super("Invariant violation: TransactionId cannot be empty");
+    this.name = "InvalidTransactionIdError";
+  }
+}
+
+export class UnbalancedTransactionError extends Error {
+  constructor(delta: bigint) {
+    super(`Invariant violation: postings must sum to zero; delta=${delta}`);
+    this.name = "UnbalancedTransactionError";
+  }
+}
+
+export class InvariantViolationError extends Error {
+  constructor(domainError: DomainError) {
+    super(`Invariant violation ${domainError.kind}`);
+    this.name = "InvariantViolationError";
+  }
+}
+
 export type DomainError =
   | { readonly kind: "AccountNotFound"; readonly id: AccountId }
   | { readonly kind: "AccountClosed"; readonly id: AccountId }
+  | { readonly kind: "UnbalancedTransaction"; readonly delta: Money }
+  | { readonly kind: "TooFewPostings"; readonly count: number }
+  | { readonly kind: "MixedCurrencyPostings"; readonly currencies: string[] }
   | {
       readonly kind: "InsufficientFunds";
       readonly accountId: AccountId;
