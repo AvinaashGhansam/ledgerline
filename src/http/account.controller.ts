@@ -1,8 +1,10 @@
 import { Router } from "express";
 import { createAccount, getAccount, getBalanceUseCase } from "../application/account.use-case.ts";
+import { toAccountId } from "../domain/account.entity.ts";
 import type { LedgerRepository } from "../persistence/ledger.repository.ts";
 import { AccountParams, CreateAccountBody } from "./account.schema.ts";
-import { problem, sendProblem } from "./problem.ts";
+import { domainErrorToProblem } from "./domain-error.mapper.ts";
+import { sendProblem } from "./problem.ts";
 import { validate } from "./validate.middleware.ts";
 
 export const accountController = (repo: LedgerRepository): Router => {
@@ -18,15 +20,13 @@ export const accountController = (repo: LedgerRepository): Router => {
 
   router.get(
     "/:id",
-    validate({ params: AccountParams }, async (req, res, data) => {
+    validate({ params: AccountParams }, async (_req, res, data) => {
       const account = await getAccount(repo, data.params.id);
 
       if (!account) {
-        const p = problem({
-          slug: "account-not-found",
-          title: "Account not found",
-          status: 404,
-          detail: `id=${data.params.id}`,
+        const p = domainErrorToProblem({
+          kind: "AccountNotFound",
+          id: toAccountId(data.params.id),
         });
         sendProblem(res, p);
         return;
@@ -37,15 +37,13 @@ export const accountController = (repo: LedgerRepository): Router => {
 
   router.get(
     "/:id/balance",
-    validate({ params: AccountParams }, async (req, res, data) => {
+    validate({ params: AccountParams }, async (_req, res, data) => {
       const balance = await getBalanceUseCase(repo, data.params.id);
 
       if (!balance) {
-        const p = problem({
-          slug: "not-found",
-          title: "Balance not found",
-          status: 404,
-          extensions: { reqId: req.id },
+        const p = domainErrorToProblem({
+          kind: "AccountNotFound",
+          id: toAccountId(data.params.id),
         });
         sendProblem(res, p);
         return;

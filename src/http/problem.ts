@@ -21,12 +21,12 @@ export const problem = (input: {
   instance?: string;
   extensions?: Record<string, unknown>;
 }): Problem => ({
+  ...input.extensions,
   type: `${TYPE_BASE}/${input.slug}`,
   title: input.title,
   status: input.status,
   ...(input.detail ? { detail: input.detail } : {}),
   ...(input.instance ? { instance: input.instance } : {}),
-  ...input.extensions,
 });
 
 export const sendProblem = (res: Response, p: Problem): void => {

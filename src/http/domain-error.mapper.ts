@@ -9,7 +9,7 @@ export const domainErrorToProblem = (e: DomainError): Problem => {
         slug: "account-not-found",
         title: "Account not found",
         status: 404,
-        detail: e.id,
+        detail: `id=${e.id}`,
       });
 
     case "AccountClosed":
@@ -17,7 +17,7 @@ export const domainErrorToProblem = (e: DomainError): Problem => {
         slug: "account-closed",
         title: "Account is closed",
         status: 409,
-        detail: e.id,
+        detail: `id=${e.id}`,
       });
 
     case "UnbalancedTransaction":
@@ -40,7 +40,7 @@ export const domainErrorToProblem = (e: DomainError): Problem => {
       return problem({
         slug: "too-few-postings",
         title: "Transaction must have at least 2 postings",
-        status: 400,
+        status: 422,
         detail: e.count.toString(),
       });
 
@@ -53,6 +53,7 @@ export const domainErrorToProblem = (e: DomainError): Problem => {
           accountId: e.accountId,
           required: e.required.minorUnits.toString(),
           available: e.available.minorUnits.toString(),
+          currency: e.available.currency,
         },
       });
 

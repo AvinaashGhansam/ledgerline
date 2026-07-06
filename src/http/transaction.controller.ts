@@ -1,12 +1,11 @@
 import { Router } from "express";
 import { postTransactionUseCase } from "../application/transaction.use-case.ts";
-import { assertNever } from "../domain/result.ts";
 import type { Transaction } from "../domain/transaction.entity.ts";
 import type { IdempotencyStore } from "../persistence/idempotency.store.ts";
 import type { LedgerRepository } from "../persistence/ledger.repository.ts";
 import { domainErrorToProblem } from "./domain-error.mapper.ts";
 import { fingerprint } from "./fingerprint.ts";
-import { sendProblem } from "./problem.ts";
+import { problem, sendProblem } from "./problem.ts";
 import { CreateTransactionBody } from "./transaction.schema.ts";
 import { validate } from "./validate.middleware.ts";
 
@@ -36,7 +35,12 @@ export const transactionController = (repo: LedgerRepository, store: Idempotency
             res.status(existing.status).json(existing.body);
             return;
           }
-          res.status(409).json({ error: "idempotency_conflict" });
+          const p = problem({
+            slug: "idempotency-conflict",
+            title: "Idempotency key reused with a different payload",
+            status: 409,
+          });
+          sendProblem(res, p);
           return;
         }
       }
