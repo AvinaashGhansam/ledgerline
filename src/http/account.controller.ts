@@ -2,6 +2,7 @@ import { Router } from "express";
 import { createAccount, getAccount, getBalanceUseCase } from "../application/account.use-case.ts";
 import type { LedgerRepository } from "../persistence/ledger.repository.ts";
 import { AccountParams, CreateAccountBody } from "./account.schema.ts";
+import { problem, sendProblem } from "./problem.ts";
 import { validate } from "./validate.middleware.ts";
 
 export const accountController = (repo: LedgerRepository): Router => {
@@ -21,7 +22,13 @@ export const accountController = (repo: LedgerRepository): Router => {
       const account = await getAccount(repo, data.params.id);
 
       if (!account) {
-        res.status(404).json({ requestId: req.id, error: "not_found" });
+        const p = problem({
+          slug: "account-not-found",
+          title: "Account not found",
+          status: 404,
+          detail: `id=${data.params.id}`,
+        });
+        sendProblem(res, p);
         return;
       }
       res.status(200).json(account);
@@ -34,7 +41,13 @@ export const accountController = (repo: LedgerRepository): Router => {
       const balance = await getBalanceUseCase(repo, data.params.id);
 
       if (!balance) {
-        res.status(404).json({ requestId: req.id, error: "not_found" });
+        const p = problem({
+          slug: "not-found",
+          title: "Balance not found",
+          status: 404,
+          extensions: { reqId: req.id },
+        });
+        sendProblem(res, p);
         return;
       }
 
