@@ -1,6 +1,7 @@
 import type { Request, RequestHandler, Response } from "express";
 import type { ReqId } from "pino-http";
 import type { ZodError, ZodType, z } from "zod";
+import { problem, sendProblem } from "./problem.ts";
 
 interface ValidationSchemas {
   body?: ZodType;
@@ -23,7 +24,13 @@ const formatIssues = (error: ZodError) => {
 };
 
 const respond400 = (res: Response, error: ZodError, id: ReqId) => {
-  res.status(400).json({ requestId: id, error: "validation", issues: formatIssues(error) });
+  const p = problem({
+    slug: "validation-error",
+    title: "Validation Error",
+    status: 400,
+    extensions: { reqId: id, issues: formatIssues(error) },
+  });
+  sendProblem(res, p);
 };
 
 export const validate = <S extends ValidationSchemas>(

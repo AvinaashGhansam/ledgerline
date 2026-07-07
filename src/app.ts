@@ -1,6 +1,8 @@
 import express from "express";
 import { pinoHttp } from "pino-http";
 import { accountController } from "./http/account.controller.ts";
+import { centralErrorHandler } from "./http/error.middleware.ts";
+import { problem, sendProblem } from "./http/problem.ts";
 import { transactionController } from "./http/transaction.controller.ts";
 import type { Logger } from "./observability/logger.ts";
 import type { IdempotencyStore } from "./persistence/idempotency.store.ts";
@@ -28,6 +30,17 @@ export function createApp(deps: AppDeps) {
   app.get("/readyz", (_req, res) => {
     res.status(200).json({ status: "ready" });
   });
+
+  app.use((req, res) => {
+    const p = problem({
+      slug: "route-not-found",
+      title: "Route Not Found",
+      status: 404,
+      instance: req.originalUrl,
+    });
+    sendProblem(res, p);
+  });
+  app.use(centralErrorHandler(logger));
 
   return app;
 }

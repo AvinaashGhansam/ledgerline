@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { postTransactionUseCase } from "../application/transaction.use-case.ts";
-import { assertNever } from "../domain/result.ts";
 import type { Transaction } from "../domain/transaction.entity.ts";
 import type { IdempotencyStore } from "../persistence/idempotency.store.ts";
 import type { LedgerRepository } from "../persistence/ledger.repository.ts";
+import { domainErrorToProblem } from "./domain-error.mapper.ts";
 import { fingerprint } from "./fingerprint.ts";
+import { problem, sendProblem } from "./problem.ts";
 import { CreateTransactionBody } from "./transaction.schema.ts";
 import { validate } from "./validate.middleware.ts";
 
@@ -34,63 +35,31 @@ export const transactionController = (repo: LedgerRepository, store: Idempotency
             res.status(existing.status).json(existing.body);
             return;
           }
-          res.status(409).json({ error: "idempotency_conflict" });
+          const p = problem({
+            slug: "idempotency-conflict",
+            title: "Idempotency key reused with a different payload",
+            status: 409,
+          });
+          sendProblem(res, p);
           return;
         }
       }
 
       const result = await postTransactionUseCase(repo, data.body);
 
-      let responseStatus: number;
-      let responseBody: unknown;
-
-      if (result.ok) {
-        responseStatus = 201;
-        responseBody = presentTransaction(result.value);
-      } else {
-        switch (result.error.kind) {
-          case "AccountNotFound":
-            responseStatus = 404;
-            responseBody = { error: "account_not_found", accountId: result.error.id };
-            break;
-          case "AccountClosed":
-            responseStatus = 422;
-            responseBody = { error: "account_closed", accountId: result.error.id };
-            break;
-          case "TooFewPostings":
-            responseStatus = 400;
-            responseBody = { error: "too_few_postings", count: result.error.count };
-            break;
-          case "MixedCurrencyPostings":
-            responseStatus = 422;
-            responseBody = { error: "currency_mismatch", currencies: result.error.currencies };
-            break;
-          case "UnbalancedTransaction":
-            responseStatus = 422;
-            responseBody = {
-              error: "unbalanced_transaction",
-              delta: result.error.delta.minorUnits.toString(),
-            };
-            break;
-          case "InsufficientFunds":
-            responseStatus = 422;
-            responseBody = {
-              error: "insufficient_funds",
-              accountId: result.error.accountId,
-              required: result.error.required.minorUnits.toString(),
-              available: result.error.available.minorUnits.toString(),
-            };
-            break;
-          default:
-            return assertNever(result.error);
-        }
+      if (!result.ok) {
+        const p = domainErrorToProblem(result.error);
+        sendProblem(res, p);
+        return;
       }
 
-      if (responseStatus === 201 && key) {
-        await store.put(key, { fingerprint: fp, status: responseStatus, body: responseBody });
+      const responseBody = presentTransaction(result.value);
+
+      if (key) {
+        await store.put(key, { fingerprint: fp, status: 201, body: responseBody });
       }
 
-      res.status(responseStatus).json(responseBody);
+      res.status(201).json(responseBody);
     }),
   );
 
