@@ -1,3 +1,8 @@
+/**
+ * Environment configuration, parsed and validated once at startup. Invalid
+ * variables fail fast: the process prints the problem and exits non-zero rather
+ * than starting in a bad state. The exported {@link config} is frozen.
+ */
 import { z } from "zod";
 
 const EnvSchema = z.object({

@@ -1,3 +1,8 @@
+/**
+ * In-memory {@link IdempotencyStore} adapter backed by a `Map`. Non-persistent
+ * and unbounded (no eviction/TTL), so idempotency keys are only remembered for the
+ * lifetime of the process — adequate for local development.
+ */
 import type { IdempotencyRecord, IdempotencyStore } from "./idempotency.store.ts";
 
 export class InMemoryIdempotencyStore implements IdempotencyStore {

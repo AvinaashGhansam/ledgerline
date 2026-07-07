@@ -1,6 +1,15 @@
+/**
+ * The domain's two error families:
+ *
+ * 1. **Thrown invariant errors** (the `Error` subclasses below) — signal an
+ *    *impossible* state that indicates a bug; they are thrown, not returned.
+ * 2. **The {@link DomainError} union** — *expected* business failures that are
+ *    returned inside a `Result` and mapped to HTTP problems at the boundary.
+ */
 import type { AccountId } from "./account.entity.ts";
 import type { Currency, Money } from "./money.value-object.ts";
 
+/** Thrown when arithmetic is attempted on two `Money` values of different currencies. */
 export class CurrencyMismatchError extends Error {
   constructor(base: Currency, other: Currency) {
     super(`Currency mismatch: cannot operate on ${base} and ${other}`);
@@ -8,6 +17,7 @@ export class CurrencyMismatchError extends Error {
   }
 }
 
+/** Thrown when a `number` amount is not a safe integer; callers should pass a `bigint` instead. */
 export class NonIntegerAmountError extends Error {
   constructor(amount: number) {
     super(
@@ -17,6 +27,7 @@ export class NonIntegerAmountError extends Error {
   }
 }
 
+/** Thrown when constructing an `AccountId` from an empty string. */
 export class InvalidAccountIdError extends Error {
   constructor() {
     super("Invariant violation: AccountId cannot be empty");
@@ -24,6 +35,7 @@ export class InvalidAccountIdError extends Error {
   }
 }
 
+/** Thrown when constructing a `TransactionId` from an empty string. */
 export class InvalidTransactionIdError extends Error {
   constructor() {
     super("Invariant violation: TransactionId cannot be empty");
@@ -31,6 +43,7 @@ export class InvalidTransactionIdError extends Error {
   }
 }
 
+/** Thrown when a `Transaction` is constructed whose postings do not sum to zero. */
 export class UnbalancedTransactionError extends Error {
   constructor(delta: bigint) {
     super(`Invariant violation: postings must sum to zero; delta=${delta}`);
@@ -38,6 +51,10 @@ export class UnbalancedTransactionError extends Error {
   }
 }
 
+/**
+ * Thrown when an expected {@link DomainError} surfaces somewhere it should have
+ * been impossible — i.e. an already-validated invariant was violated anyway.
+ */
 export class InvariantViolationError extends Error {
   constructor(domainError: DomainError) {
     super(`Invariant violation ${domainError.kind}`);
@@ -45,6 +62,11 @@ export class InvariantViolationError extends Error {
   }
 }
 
+/**
+ * Expected business failures, returned inside a `Result` (never thrown) and
+ * discriminated on `kind`. The HTTP layer maps each kind to a problem response;
+ * adding a kind here forces a matching case in that mapper (via `assertNever`).
+ */
 export type DomainError =
   | { readonly kind: "AccountNotFound"; readonly id: AccountId }
   | { readonly kind: "AccountClosed"; readonly id: AccountId }
