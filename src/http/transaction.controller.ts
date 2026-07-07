@@ -1,3 +1,7 @@
+/**
+ * HTTP router for the transaction resource (`/transactions`): posting a balanced
+ * transaction, with optional `Idempotency-Key` handling.
+ */
 import { Router } from "express";
 import { postTransactionUseCase } from "../application/transaction.use-case.ts";
 import type { Transaction } from "../domain/transaction.entity.ts";
@@ -9,6 +13,7 @@ import { problem, sendProblem } from "./problem.ts";
 import { CreateTransactionBody } from "./transaction.schema.ts";
 import { validate } from "./validate.middleware.ts";
 
+/** Shape a domain {@link Transaction} into its JSON response, rendering bigint amounts as strings. */
 const presentTransaction = (tx: Transaction) => ({
   id: tx.id,
   memo: tx.memo,
@@ -19,6 +24,19 @@ const presentTransaction = (tx: Transaction) => ({
   })),
 });
 
+/**
+ * Build the transaction router.
+ *
+ * `POST /transactions` supports idempotent replay: when an `Idempotency-Key` is
+ * present, a prior record with a matching body fingerprint replays the stored
+ * response, while a matching key with a *different* body yields a `409`
+ * `idempotency-conflict`. Otherwise the posting use-case runs and its
+ * `Result.err` is mapped to a problem; on success the new transaction is stored
+ * (if keyed) and returned as `201`.
+ *
+ * @param repo - Ledger repository for posting transactions.
+ * @param store - Idempotency store keyed by `Idempotency-Key`.
+ */
 export const transactionController = (repo: LedgerRepository, store: IdempotencyStore): Router => {
   const router = Router();
 

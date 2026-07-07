@@ -1,3 +1,8 @@
+/**
+ * HTTP router for the account resource (`/accounts`): create, fetch, and balance.
+ * Each route validates its input, calls a use-case, and shapes the result — either
+ * a JSON success or an RFC 9457 problem.
+ */
 import { Router } from "express";
 import { createAccount, getAccount, getBalanceUseCase } from "../application/account.use-case.ts";
 import { toAccountId } from "../domain/account.entity.ts";
@@ -7,6 +12,15 @@ import { domainErrorToProblem } from "./domain-error.mapper.ts";
 import { sendProblem } from "./problem.ts";
 import { validate } from "./validate.middleware.ts";
 
+/**
+ * Build the account router.
+ *
+ * A missing account (on fetch or balance) is reported as a `404` `account-not-found`
+ * problem, routed through {@link domainErrorToProblem} so the not-found shape is
+ * defined in exactly one place.
+ *
+ * @param repo - Ledger repository the routes operate against.
+ */
 export const accountController = (repo: LedgerRepository): Router => {
   const router = Router();
 

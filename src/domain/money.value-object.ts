@@ -1,5 +1,11 @@
+/**
+ * `Money` value object: an exact monetary amount as an integer count of a
+ * currency's minor units (cents, pence), held in `bigint` to avoid floating-point
+ * error. Instances are immutable — every operation returns a new `Money`.
+ */
 import { CurrencyMismatchError, NonIntegerAmountError } from "./errors.ts";
 
+/** Supported ISO currency codes. */
 export const CURRENCIES = ["USD", "EUR", "GBP"] as const;
 export type Currency = (typeof CURRENCIES)[number];
 
@@ -12,6 +18,12 @@ export class Money {
     this.currency = currency;
   }
 
+  /**
+   * Construct `Money` from an amount in minor units. Prefer `bigint`; a `number`
+   * is accepted for ergonomics but must be a safe integer.
+   *
+   * @throws NonIntegerAmountError if `amount` is a `number` that is not a safe integer.
+   */
   static of(amount: number | bigint, currency: Currency): Money {
     let safeAmount: bigint;
 
@@ -26,16 +38,33 @@ export class Money {
     return new Money(safeAmount, currency);
   }
 
+  /**
+   * Sum with another amount of the same currency.
+   * @throws CurrencyMismatchError if currencies differ.
+   */
   add(other: Money): Money {
     this.#assertSameCurrency(other);
     return new Money(this.minorUnits + other.minorUnits, this.currency);
   }
 
+  /**
+   * Difference from another amount of the same currency.
+   * @throws CurrencyMismatchError if currencies differ.
+   */
   subtract(other: Money): Money {
     this.#assertSameCurrency(other);
     return new Money(this.minorUnits - other.minorUnits, this.currency);
   }
 
+  /**
+   * Split this amount into `n` shares as evenly as possible with **no minor units
+   * lost or created**: the shares always sum back to the original. Any indivisible
+   * remainder is spread one unit at a time across the leading shares (largest-
+   * remainder), and negative amounts allocate in the same direction.
+   *
+   * @param n - Number of shares; must be a positive safe integer.
+   * @throws Error if `n` is not a positive integer.
+   */
   allocate(n: number): Money[] {
     if (!Number.isSafeInteger(n) || n < 1) {
       throw new Error("allocate(n): n must be positive integer");
@@ -69,6 +98,7 @@ export class Money {
     }
   }
 
+  /** True if the same currency and the same minor-unit amount. Differing currencies are never equal. */
   equals(other: Money): boolean {
     if (this.currency !== other.currency) {
       return false;
@@ -76,10 +106,12 @@ export class Money {
     return this.minorUnits === other.minorUnits;
   }
 
+  /** True if the amount is exactly zero. */
   isZero(): boolean {
     return this.minorUnits === 0n;
   }
 
+  /** True if the amount is below zero. */
   isNegative(): boolean {
     return this.minorUnits < 0n;
   }

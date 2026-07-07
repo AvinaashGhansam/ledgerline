@@ -1,3 +1,9 @@
+/**
+ * In-memory {@link LedgerRepository} adapter backed by `Map`s. Non-persistent —
+ * all data is lost when the process restarts — and intended for local development
+ * until a durable backend lands. Balances are derived by summing postings, never
+ * stored, so they cannot drift from the transaction history.
+ */
 import { Account, type AccountId, toAccountId } from "../domain/account.entity.ts";
 import type { DomainError } from "../domain/errors.ts";
 import { Money } from "../domain/money.value-object.ts";
